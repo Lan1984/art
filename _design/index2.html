@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>La meva Col·lecció d'Art</title>
+    <style>
+        /* Estils Generals */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; background-color: #f4f4f6; color: #333; }
+        h1 { text-align: center; margin-bottom: 30px; font-weight: 300; letter-spacing: 1px; }
+        #loading { text-align: center; font-size: 1.2em; color: #666; margin-top: 5px; }
+
+        /* Estils de la Galeria Principal */
+        .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .art-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
+        .art-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        
+        /* Contenidor de la imatge / rectangle gris fix de 3:4 */
+        .art-img-container { width: 100%; aspect-ratio: 3/4; background-color: #e0e0e0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .art-img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .no-img-text { color: #888; font-size: 0.9em; font-style: italic; }
+
+        /* Textos de la Targeta */
+        .art-info { padding: 15px; display: flex; flex-direction: column; gap: 5px; background: white; }
+        .art-title { font-weight: 600; font-size: 1.05em; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .art-meta { font-size: 0.9em; color: #666; }
+        .art-price { font-weight: bold; color: #2c3e50; margin-top: 5px; font-size: 0.95em; }
+
+        /* Estils del Modal (Finestra Emergent) */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 16px; max-width: 650px; width: 90%; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 20px; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 30px; font-weight: bold; color: #aaa; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #333; }
+        
+        /* Contingut del Modal */
+        .modal-body { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 500px) { .modal-body { grid-template-columns: 180px 1fr; } }
+        .modal-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 8px; background-color: #e0e0e0; }
+        .modal-details { display: flex; flex-direction: column; gap: 8px; }
+        .detail-item { font-size: 0.95em; line-height: 1.4; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+        .detail-item strong { color: #555; display: inline-block; width: 120px; }
+        .detail-item a { color: #3498db; text-decoration: none; }
+        .detail-item a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <h1>Col·lecció Privada de Pintures</h1>
+    <div id="loading">Carregant col·lecció des de Google Sheets...</div>
+    <div id="gallery" class="art-grid"></div>
+
+    <!-- Estructura del Modal -->
+    <div id="artModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="modalData" class="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+
+        const sheetId = '1f8HHAOD0xZ0JKr1LHRxvbPEkplWMtI6hWt6jC8_ebDs';
+const gid = '0';
+
+// Construct the GViz API URL, specifying JSON output format
+const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+
+fetch(url)
+  .then(response => response.text()) // Note: get text first, not direct json
+  .then(text => {
+    // GViz returns something like: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+    // Need to strip the prefix and suffix, then parse
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('Failed to parse response');
+
+    const jsonString = text.substring(start, end + 1);
+    const data = JSON.parse(jsonString);
+
+    // At this point, data.table.rows contains your data.
+    // Each row's data is in data.table.rows[i].c, each cell is an object { v: value }
+    console.log(data.table);
+  })
+  .catch(error => console.error('Error fetching sheet:', error));
+
+
+        // Funcions del Modal
+        function openModal(index) {
+            const p = pinturesData[index];
+            const modalData = document.getElementById('modalData');
+            
+            // Imatge per al modal
+            const imgHtml = p.foto 
+                ? `<img class="modal-img" src="${p.foto}" alt="${p.titol}">` 
+                : `<div class="modal-img" style="display:flex;align-items:center;justify-content:center;color:#888;font-style:italic;">Sense Foto</div>`;
+
+            // Enllaç de la Viquipèdia opcional
+            const wikiHtml = p.wiki 
+                ? `<a href="${p.wiki}" target="_blank">Veure enllaç ↗</a>` 
+                : '-';
+
+            modalData.innerHTML = `
+                ${imgHtml}
+                <div class="modal-details">
+                    <div class="detail-item"><strong>Títol:</strong> ${p.titol || '-'}</div>
+                    <div class="detail-item"><strong>Autor:</strong> ${p.autor || '-'}</div>
+                    <div class="detail-item"><strong>Any Producció:</strong> ${p.anyProduccio || '-'}</div>
+                    <div class="detail-item"><strong>Any Compra:</strong> ${p.anyCompra || '-'}</div>
+                    <div class="detail-item"><strong>Preu:</strong> ${p.preu ? p.preu + ' €' : '-'}</div>
+                    <div class="detail-item"><strong>Estil:</strong> ${p.estil || '-'}</div>
+                    <div class="detail-item"><strong>Tipus:</strong> ${p.tipus || '-'}</div>
+                    <div class="detail-item"><strong>Lloc actual:</strong> ${p.lloc || '-'}</div>
+                    <div class="detail-item"><strong>Wiki:</strong> ${wikiHtml}</div>
+                    <div class="detail-item"><strong>Descripció:</strong> ${p.descripcio || '-'}</div>
+                    <div class="detail-item"><strong>Nota interna:</strong> ${p.nota || '-'}</div>
+                </div>
+            `;
+            
+            document.getElementById('artModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('artModal').style.display = 'none';
+        }
+
+        // Tancar el modal si es fa clic fora de la finestra blanca
+        window.onclick = function(event) {
+            const modal = document.getElementById('artModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
