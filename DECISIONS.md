@@ -46,7 +46,7 @@ Static site for GitHub Pages that renders the art collection live from a public 
 
 - Based on the Claude Design bundle (now in `_design/`): Cormorant Garamond / Inter / JetBrains Mono (Google Fonts), paper/ink palette, terracotta accent.
 - Gallery as a **grid**: 3 columns desktop, 2 tablet (≤1080px), 1 mobile (≤560px). Sheet order, no filters.
-- Header: OE logo + "Col·lecció Ortín-Escudé" only. Nav: Obres, Llibres (disabled, "Properament").
+- Header: OE logo + "Col·lecció Ortín-Escudé" only. Nav: Obres, Llibres → `../books/` (sister site, see `../books/DECISIONS.md`).
 - No hero / h1 on the gallery; just a small "N obres" count line.
 - Footer: "© Col·lecció Ortín-Escudé" only.
 - Catalan only.
@@ -59,5 +59,4 @@ Static site for GitHub Pages that renders the art collection live from a public 
 
 ## Later
 
-- Llibres (books) section — currently disabled in the nav.
 - Fill in missing photos in the sheet.
